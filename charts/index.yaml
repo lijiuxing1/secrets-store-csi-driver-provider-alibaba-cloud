@@ -2,8 +2,28 @@ apiVersion: v1
 entries:
   csi-secrets-store-provider-alibabacloud:
   - apiVersion: v1
+    appVersion: 0.5.0
+    created: "2025-05-26T18:32:59.2810084+08:00"
+    description: A Helm chart to install the Secrets Store CSI Driver, the Alibaba
+      Cloud KMS Secret Manager and OOS Encrypted Parameter Provider inside a Kubernetes
+      cluster.
+    digest: b3f7b69aeffaa3e031574d7b5c69550e3e78635626d4740c992e5706fd3063d0
+    home: https://raw.githubusercontent.com/AliyunContainerService/secrets-store-csi-driver-provider-alibaba-cloud/charts
+    keywords:
+    - releaseName:csi-secrets-store-provider-alibabacloud
+    - arch:amd64
+    - namespace:kube-system
+    - supportType:ExternalKubernetes,Kubernetes,ManagedKubernetes
+    kubeVersion: '>=1.16.0-0'
+    name: csi-secrets-store-provider-alibabacloud
+    sources:
+    - https://github.com/AliyunContainerService/secrets-store-csi-driver-provider-alibaba-cloud
+    urls:
+    - https://raw.githubusercontent.com/AliyunContainerService/secrets-store-csi-driver-provider-alibaba-cloud/main/charts/csi-secrets-store-provider-alibabacloud-0.5.0.tgz
+    version: 0.5.0
+  - apiVersion: v1
     appVersion: 0.4.0
-    created: "2025-05-22T14:43:39.8467176+08:00"
+    created: "2025-05-26T18:32:59.2790062+08:00"
     description: A Helm chart to install the Secrets Store CSI Driver, the Alibaba
       Cloud KMS Secret Manager and OOS Encrypted Parameter Provider inside a Kubernetes
       cluster.
@@ -23,7 +43,7 @@ entries:
     version: 0.4.0
   - apiVersion: v1
     appVersion: 0.3.0
-    created: "2025-05-22T14:43:39.8445681+08:00"
+    created: "2025-05-26T18:32:59.2770072+08:00"
     description: A Helm chart to install the Secrets Store CSI Driver, the Alibaba
       Cloud KMS Secret Manager and OOS Encrypted Parameter Provider inside a Kubernetes
       cluster.
@@ -43,7 +63,7 @@ entries:
     version: 0.3.0
   - apiVersion: v1
     appVersion: 0.2.0
-    created: "2025-05-22T14:43:39.8423775+08:00"
+    created: "2025-05-26T18:32:59.2750081+08:00"
     description: A Helm chart to install the Secrets Store CSI Driver and the Alibaba
       Cloud KMS Secret Manager Provider inside a Kubernetes cluster.
     digest: 9d26d57d2e551be3ef0c15efcf22e01cad45f6011f970f624ae78c9c1d9a9382
@@ -57,7 +77,7 @@ entries:
     version: 0.2.0
   - apiVersion: v1
     appVersion: 0.1.0
-    created: "2025-05-22T14:43:39.8408253+08:00"
+    created: "2025-05-26T18:32:59.2720067+08:00"
     description: A Helm chart to install the Secrets Store CSI Driver and the Alibaba
       Cloud KMS Secret Manager Provider inside a Kubernetes cluster.
     digest: 94b65d1ede3dc3143d8385ad76446a8140fd50dc0cf8ce85e088aa2c14e83302
@@ -69,4 +89,4 @@ entries:
     urls:
     - https://raw.githubusercontent.com/AliyunContainerService/secrets-store-csi-driver-provider-alibaba-cloud/main/charts/csi-secrets-store-provider-alibabacloud-0.1.0.tgz
     version: 0.1.0
-generated: "2025-05-22T14:43:39.8392193+08:00"
+generated: "2025-05-26T18:32:59.2700076+08:00"
