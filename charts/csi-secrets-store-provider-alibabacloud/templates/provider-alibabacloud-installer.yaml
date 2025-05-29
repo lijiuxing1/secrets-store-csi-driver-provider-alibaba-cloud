@@ -42,6 +42,7 @@ spec:
             - --healthz-port={{ .Values.linux.healthzPort }}
             - --healthz-path={{ .Values.linux.healthzPath }}
             - --healthz-timeout={{ .Values.linux.healthzTimeout }}
+            - --region={{ .Values.regionId }}
           livenessProbe:
             httpGet:
               path: {{ .Values.linux.healthzPath }}

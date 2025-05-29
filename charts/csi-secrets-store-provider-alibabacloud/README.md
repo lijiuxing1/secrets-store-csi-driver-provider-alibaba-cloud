@@ -29,6 +29,7 @@ The following table lists the configurable parameters of the csi-secrets-store-p
 | `imagePullSecrets`                                             | Secrets to be used when pulling images                                                                                                                                                               | `[]`                                                                                            |
 | `logFormatJSON`                                                | Use JSON logging format                                                                                                                                                                              | `false`                                                                                         |
 | `logVerbosity`                                                 | Log level. Uses V logs (klog)                                                                                                                                                                        | `0`                                                                                             |
+| `regionId`                                                     | Pull secret credentials from the specified region                                                                                                                                                                           | `cn-hangzhou`                                                                                             |
 | `envVarsFromSecret.ACCESS_KEY_ID`                              | Set the ACCESS_KEY_ID variable to specify the credential RAM AK for building SDK client, which needs to be defined in the secret named**alibaba-credentials**                                  |                                                                                                   |
 | `envVarsFromSecret.SECRET_ACCESS_KEY`                          | Set the SECRET_ACCESS_KEY variable to specify the credential RAM SK for building SDK client, which needs to be defined in the secret named**alibaba-credentials**                              |                                                                                                   |
 | `envVarsFromSecret.ALICLOUD_ROLE_ARN`                          | Set the ALICLOUD_ROLE_ARN variable to specify the RAM role ARN for building SDK client, which needs to be defined in the secret named**alibaba-credentials**                                   |                                                                                                   |
@@ -84,7 +85,7 @@ The following table lists the configurable parameters of the csi-secrets-store-p
      ```shell
      aliyun kms CreateSecret --SecretName test-kms --SecretData 1234 --VersionId v1 --EncryptionKeyId <kms-key-id> --DKMSInstanceId <kms-instance-id> 
      ```
-   - Create a minimized RAM policy using the template below::
+   - Create a minimized RAM policy using the template below:
 
      ```shell
      aliyun ram CreatePolicy --PolicyName kms-test --PolicyDocument '{
@@ -98,7 +99,7 @@ The following table lists the configurable parameters of the csi-secrets-store-p
          ],
          "Resource": [
            "acs:kms:cn-hangzhou:{accountId}:secret/test-kms",  # test-kms is the name of the secret created above
-           "acs:kms:cn-hangzhou:{accountId}:key/{kms-key-id}"  # # {kms-key-id} is the EncryptionKeyId used above
+           "acs:kms:cn-hangzhou:{accountId}:key/{kms-key-id}"  # remove this if OOS Encryption Parameters are not used
          ]
        }
      ]}'
@@ -109,7 +110,7 @@ The following table lists the configurable parameters of the csi-secrets-store-p
      ```shell
      aliyun oos CreateSecretParameter --Value SecretParameter --Name test-oos
      ```
-   - Create a minimized RAM policy using the template below::
+   - Create a minimized RAM policy using the template below:
 
      ```shell
      aliyun ram CreatePolicy --PolicyName oos-test --PolicyDocument '{

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/AliyunContainerService/secrets-store-csi-driver-provider-alibaba-cloud/auth"
 	"github.com/AliyunContainerService/secrets-store-csi-driver-provider-alibaba-cloud/provider"
-	"github.com/AliyunContainerService/secrets-store-csi-driver-provider-alibaba-cloud/utils"
 	openapi "github.com/alibabacloud-go/darabonba-openapi/client"
 	openapiv2 "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	kms "github.com/alibabacloud-go/kms-20160120/v2/client"
@@ -72,12 +71,9 @@ func (s *CSIDriverProviderServer) Mount(ctx context.Context, req *v1alpha1.Mount
 	region := attrib[regionAttrib]
 	translate := attrib[transAttrib]
 
-	// Lookup the region if one was not specified.
+	// Set the region if one was not specified.
 	if len(region) <= 0 {
-		region, err = utils.GetRegion()
-		if region == "" {
-			return nil, fmt.Errorf("failed to retrieve region from node. error %+v", err)
-		}
+		region = provider.Region
 	}
 	klog.Infof("Servicing mount request for pod %s in namespace %s using service account %s with region %s", podName, nameSpace, svcAcct, region)
 

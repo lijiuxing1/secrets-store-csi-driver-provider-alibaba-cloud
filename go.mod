@@ -9,9 +9,9 @@ require (
 	github.com/alibabacloud-go/kms-20160120/v2 v2.0.0
 	github.com/alibabacloud-go/oos-20190601/v4 v4.2.2
 	github.com/alibabacloud-go/tea v1.2.2
-	github.com/aliyun/alibaba-cloud-sdk-go v1.61.1473
-	github.com/aliyun/credentials-go v1.3.1
-	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
+	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
+	github.com/aliyun/credentials-go v1.4.6
+	github.com/jmespath/go-jmespath v0.4.0
 	github.com/pkg/errors v0.9.1
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 	google.golang.org/grpc v1.29.1
@@ -22,7 +22,7 @@ require (
 
 require (
 	github.com/alibabacloud-go/alibabacloud-gateway-spi v0.0.4 // indirect
-	github.com/alibabacloud-go/debug v1.0.0 // indirect
+	github.com/alibabacloud-go/debug v1.0.1 // indirect
 	github.com/alibabacloud-go/endpoint-util v1.1.0 // indirect
 	github.com/alibabacloud-go/openapi-util v0.1.0 // indirect
 	github.com/alibabacloud-go/tea-utils v1.3.9 // indirect
@@ -48,7 +48,7 @@ require (
 	google.golang.org/genproto v0.0.0-20201110150050-8816d57aaa9a // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/ini.v1 v1.66.2 // indirect
+	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 	k8s.io/apimachinery v0.20.2 // indirect
 	k8s.io/client-go v12.0.0+incompatible // indirect

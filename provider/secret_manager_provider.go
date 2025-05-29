@@ -37,7 +37,10 @@ type Limiter struct {
 	OOS OosLimiter
 }
 
-var LimiterInstance Limiter
+var (
+	Region          string
+	LimiterInstance Limiter
+)
 
 type SecretsManagerProvider struct {
 	KmsClient *kms.Client
@@ -174,13 +177,13 @@ func getKMSSecret(c *kms.Client, secObj *SecretObject) (string, *SecretValue, er
 	if err != nil {
 		klog.Error(err, "failed to get %s secret value from kms, err = %s", secObj.ObjectName, err.Error())
 		if !judgeNeedRetry(err) {
-			klog.Error(err, "failed to get secret value from kms", "key", secObj.ObjectName)
+			klog.Error(err, "failed to get secret value from kms ", "key ", secObj.ObjectName)
 			return "", nil, fmt.Errorf("Failed fetching secret %s: %s", secObj.ObjectName, err.Error())
 		} else {
 			time.Sleep(getWaitTimeExponential(1))
 			response, err = c.GetSecretValue(request)
 			if err != nil {
-				klog.Error(err, "failed to get secret value from kms", "key", secObj.ObjectName)
+				klog.Error(err, "failed to get secret value from kms ", "key ", secObj.ObjectName)
 				return "", nil, fmt.Errorf("Failed fetching secret %s: %s", secObj.ObjectName, err.Error())
 			}
 		}
@@ -202,13 +205,13 @@ func getOOSSecret(c *oos.Client, secObj *SecretObject) (string, *SecretValue, er
 	response, err := c.GetSecretParameter(request)
 	if err != nil {
 		if !judgeNeedRetry(err) {
-			klog.Error(err, "failed to get secret value from oos", "key", secObj.ObjectName)
+			klog.Error(err, "failed to get secret value from oos ", "key ", secObj.ObjectName)
 			return "", nil, fmt.Errorf("Failed fetching secret %s: %s", secObj.ObjectName, err.Error())
 		} else {
 			time.Sleep(getWaitTimeExponential(1))
 			response, err = c.GetSecretParameter(request)
 			if err != nil {
-				klog.Error(err, "failed to get secret value from oos", "key", secObj.ObjectName)
+				klog.Error(err, "failed to get secret value from oos ", "key ", secObj.ObjectName)
 				return "", nil, fmt.Errorf("Failed fetching secret %s: %s", secObj.ObjectName, err.Error())
 			}
 		}
