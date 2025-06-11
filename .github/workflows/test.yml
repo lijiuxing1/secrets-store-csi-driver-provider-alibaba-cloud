@@ -21,7 +21,7 @@ jobs:
       with:
         version: latest
         skip-pkg-cache: true
-        args: --verbose
+        args: --verbose --timeout=10m
   go-security-scan:
     runs-on: ubuntu-latest
     env:
@@ -31,9 +31,9 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Run Gosec Security Scanner
-        uses: securego/gosec@master
+        uses: securego/gosec@master 
         with:
-          args: '-no-fail -exclude-dir=pkg/apis -exclude-dir=ack-secret-manager-cli ./...'
+          args: '-no-fail ./...'
 
   build:
     runs-on: ubuntu-latest
