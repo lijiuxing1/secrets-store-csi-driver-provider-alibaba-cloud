@@ -3,6 +3,7 @@ package provider
 import (
 	"fmt"
 	"github.com/AliyunContainerService/secrets-store-csi-driver-provider-alibaba-cloud/utils"
+	kms "github.com/alibabacloud-go/kms-20160120/v3/client"
 	"k8s.io/klog/v2"
 	"os"
 	"path/filepath"
@@ -36,6 +37,12 @@ type SecretObject struct {
 	//Optional array to specify what json key value pairs to extract from a secret and mount as individual secrets
 	JMESPath []JMESPathObject `json:"jmesPath"`
 
+	// Optional endpoint to access KMS Service
+	KmsEndpoint string `json:"kmsEndpoint"`
+
+	// KMS service client (not part of YAML spec).
+	KmsClient *kms.Client `json:"-"`
+
 	// Path translation character (not part of YAML spec).
 	translate string `json:"-"`
 
@@ -50,6 +57,15 @@ type JMESPathObject struct {
 
 	//File name in which to store the secret in.
 	ObjectAlias string `json:"objectAlias"`
+}
+
+// Define validation state structure
+type validationState struct {
+	names     map[string]bool
+	objects   []*SecretObject
+	specObj   *SecretObject
+	translate string
+	mountDir  string
 }
 
 // Returns the file name where the secrets are to be written.
@@ -69,8 +85,8 @@ func (s *SecretObject) GetFileName() (path string) {
 	return fileName
 }
 
-func NewSecretObjectList(mountDir, translate, objectSpec string) (objects []*SecretObject, e error) {
-
+// In NewSecretObjectList function:
+func NewSecretObjectList(mountDir, translate, objectSpec string) ([]*SecretObject, error) {
 	// See if we should substitite underscore for slash
 	if len(translate) == 0 {
 		translate = "_" // Use default
@@ -87,65 +103,74 @@ func NewSecretObjectList(mountDir, translate, objectSpec string) (objects []*Sec
 		return nil, fmt.Errorf("Failed to load SecretProviderClass: %+v", err)
 	}
 
-	// Validate each record and check for duplicates
-	names := make(map[string]bool)
+	// Initialize validation state
+	state := &validationState{
+		names:     make(map[string]bool),
+		objects:   make([]*SecretObject, 0, len(specObjects)),
+		translate: translate,
+		mountDir:  mountDir,
+	}
+
+	// Process each specObj
 	for _, specObj := range specObjects {
-		specObj.translate = translate
-		specObj.mountDir = mountDir
-		err = specObj.validateSecretObject()
-		if err != nil {
+		state.specObj = specObj
+		if err := processSecretObject(state); err != nil {
 			return nil, err
 		}
-
-		// Group secrets of the same type together to allow batching requests
-		objects = append(objects, specObj)
-
-		// Check for duplicate names
-		if names[specObj.ObjectName] && names[specObj.ObjectAlias] && ExistsWithSameNameAndType(objects, specObj) {
-			return nil, fmt.Errorf("Name already in use for objectName: %s", specObj.ObjectName)
-		}
-		names[specObj.ObjectName] = true
-
-		if len(specObj.ObjectAlias) > 0 {
-			if names[specObj.ObjectAlias] {
-				return nil, fmt.Errorf("Name already in use for objectAlias: %s", specObj.ObjectAlias)
-			}
-			names[specObj.ObjectAlias] = true
-		}
-
-		if len(specObj.JMESPath) == 0 { //jmesPath not used. No more checks
-			continue
-		}
-		klog.Infof("found jmes defined in spc %s", specObj.ObjectName)
-
-		for _, JMESPathObject := range specObj.JMESPath {
-			if names[JMESPathObject.ObjectAlias] {
-				return nil, fmt.Errorf("Name already in use for objectAlias: %s", JMESPathObject.ObjectAlias)
-			}
-
-			names[JMESPathObject.ObjectAlias] = true
-		}
-
 	}
 
-	return objects, nil
+	return state.objects, nil
 }
 
-// check if there exists an object with the same name and type.
-func ExistsWithSameNameAndType(objects []*SecretObject, specObj *SecretObject) bool {
-	for _, obj := range objects {
-		if obj.ObjectName != specObj.ObjectName {
-			continue
-		}
+// Process and validate a single SecretObject
+func processSecretObject(state *validationState) error {
+	// Set object properties
+	state.specObj.translate = state.translate
+	state.specObj.mountDir = state.mountDir
 
-		if obj.ObjectType == specObj.ObjectType || (obj.ObjectType == "" && specObj.ObjectType == ObjectTypeKMS) || (obj.ObjectType == ObjectTypeKMS && specObj.ObjectType == "") {
-			return true
+	// Validate basic object properties
+	if err := state.specObj.validateSecretObject(); err != nil {
+		return err
+	}
+
+	// Add to validated objects list
+	state.objects = append(state.objects, state.specObj)
+
+	// Determine object type (default to KMS)
+	objType := state.specObj.ObjectType
+	if objType == "" {
+		objType = ObjectTypeKMS
+	}
+
+	// Check for duplicate object name + type combination
+	typeNameKey := fmt.Sprintf("%s:%s:%s", state.specObj.ObjectName, state.specObj.ObjectAlias, objType)
+	if state.names[typeNameKey] {
+		return fmt.Errorf("duplicate object name: %s (type: %s)", state.specObj.ObjectName, objType)
+	}
+	state.names[typeNameKey] = true
+
+	// Check for duplicate object alias
+	if alias := state.specObj.ObjectAlias; alias != "" {
+		if state.names[alias] {
+			return fmt.Errorf("duplicate object alias: %s", alias)
+		}
+		state.names[alias] = true
+	}
+
+	// Process JMESPath entries if present
+	if len(state.specObj.JMESPath) > 0 {
+		klog.Infof("found JMES path defined in SPC: %s", state.specObj.ObjectName)
+		for _, jmes := range state.specObj.JMESPath {
+			jmesKey := fmt.Sprintf("jmes:%s", jmes.ObjectAlias)
+			if state.names[jmesKey] {
+				return fmt.Errorf("duplicate JMES path object alias: %s", jmes.ObjectAlias)
+			}
+			state.names[jmesKey] = true
 		}
 	}
 
-	return false
+	return nil
 }
-
 // validateSecretObject is used to validate input before it is used by the rest of the plugin.
 func (s *SecretObject) validateSecretObject() error {
 

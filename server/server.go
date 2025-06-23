@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"github.com/AliyunContainerService/secrets-store-csi-driver-provider-alibaba-cloud/auth"
 	"github.com/AliyunContainerService/secrets-store-csi-driver-provider-alibaba-cloud/provider"
-	openapi "github.com/alibabacloud-go/darabonba-openapi/client"
-	openapiv2 "github.com/alibabacloud-go/darabonba-openapi/v2/client"
-	kms "github.com/alibabacloud-go/kms-20160120/v2/client"
+	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
+	kms "github.com/alibabacloud-go/kms-20160120/v3/client"
 	oos "github.com/alibabacloud-go/oos-20190601/v4/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/credentials-go/credentials"
@@ -26,14 +25,15 @@ import (
 var Version string
 
 const (
-	namespaceAttrib  = "csi.storage.k8s.io/pod.namespace"
-	acctAttrib       = "csi.storage.k8s.io/serviceAccount.name"
-	podnameAttrib    = "csi.storage.k8s.io/pod.name"
-	regionAttrib     = "region"          // The attribute name for the region in the SecretProviderClass
-	transAttrib      = "pathTranslation" // Path translation char
-	secProvAttrib    = "objects"         // The attributed used to pass the SecretProviderClass definition (with what to mount)
-	defaultKmsDomain = "kms-vpc.%s.aliyuncs.com"
-	defaultOosDomain = "oos-vpc.%s.aliyuncs.com"
+	namespaceAttrib    = "csi.storage.k8s.io/pod.namespace"
+	acctAttrib         = "csi.storage.k8s.io/serviceAccount.name"
+	podnameAttrib      = "csi.storage.k8s.io/pod.name"
+	regionAttrib       = "region"          // The attribute name for the region in the SecretProviderClass
+	transAttrib        = "pathTranslation" // Path translation char
+	secProvAttrib      = "objects"         // The attributed used to pass the SecretProviderClass definition (with what to mount)
+	defaultKmsEndpoint = "kms-vpc.%s.aliyuncs.com"
+	defaultOosEndpoint = "oos-vpc.%s.aliyuncs.com"
+	suffix             = "cryptoservice.kms.aliyuncs.com"
 )
 
 // A Secrets Store CSI Driver provider implementation for Alibaba Cloud Secrets Manager.
@@ -102,30 +102,47 @@ func (s *CSIDriverProviderServer) Mount(ctx context.Context, req *v1alpha1.Mount
 		return nil, err
 	}
 
-	objectTypeMap := make(map[string]bool)
-	for _, descriptor := range descriptors {
-		switch descriptor.ObjectType {
-		case "", provider.ObjectTypeKMS:
-			objectTypeMap[provider.ObjectTypeKMS] = true
-		case provider.ObjectTypeOOS:
-			objectTypeMap[provider.ObjectTypeOOS] = true
-		default:
-			return nil, fmt.Errorf("unsupported object type, only support %q and %q", provider.ObjectTypeKMS, provider.ObjectTypeOOS)
-		}
-	}
-
 	var kmsClient *kms.Client
 	var oosClient *oos.Client
-	if objectTypeMap[provider.ObjectTypeKMS] {
-		kmsClient, err = newKmsClient(cred, region)
-		if err != nil {
-			return nil, err
-		}
+
+	// Predefined supported object types to avoid magic strings
+	var supportedObjectTypes = map[string]bool{
+		provider.ObjectTypeKMS: true,
+		provider.ObjectTypeOOS: true,
+		"":                     true, // Empty type defaults to KMS
 	}
-	if objectTypeMap[provider.ObjectTypeOOS] {
-		oosClient, err = newOosClient(cred, region)
-		if err != nil {
-			return nil, err
+
+	for _, descriptor := range descriptors {
+		// Validate object type
+		if !supportedObjectTypes[descriptor.ObjectType] {
+			return nil, fmt.Errorf("unsupported object type %q, only support %q and %q",
+				descriptor.ObjectType, provider.ObjectTypeKMS, provider.ObjectTypeOOS)
+		}
+
+		// Handle KMS type (including default empty type)
+		if descriptor.ObjectType == "" || descriptor.ObjectType == provider.ObjectTypeKMS {
+			if descriptor.KmsEndpoint != "" {
+				descriptor.KmsClient, err = newKmsClient(cred, descriptor.KmsEndpoint, region)
+				if err != nil {
+					return nil, fmt.Errorf("create KMS client failed: %w", err)
+				}
+
+				continue
+			}
+			if kmsClient == nil { // Ensure single initialization
+				if kmsClient, err = newKmsClient(cred, "", region); err != nil {
+					return nil, fmt.Errorf("create KMS client failed: %w", err)
+				}
+			}
+
+			continue
+		}
+
+		// Handle OOS type
+		if oosClient == nil { // Ensure single initialization
+			if oosClient, err = newOosClient(cred, region); err != nil {
+				return nil, fmt.Errorf("create OOS client failed: %w", err)
+			}
 		}
 	}
 
@@ -160,26 +177,35 @@ func (s *CSIDriverProviderServer) Mount(ctx context.Context, req *v1alpha1.Mount
 
 }
 
-func newKmsClient(cred credentials.Credential, region string) (*kms.Client, error) {
-	domain := defaultKmsDomain
-	if strings.Contains(domain, "%s") {
-		domain = fmt.Sprintf(domain, region)
+func newKmsClient(cred credentials.Credential, endpoint, region string) (*kms.Client, error) {
+	if endpoint == "" {
+		endpoint = defaultKmsEndpoint
+		if strings.Contains(endpoint, "%s") {
+			endpoint = fmt.Sprintf(endpoint, region)
+		}
 	}
-	kmsClient, err := kms.NewClient(&openapi.Config{
-		Endpoint:   tea.String(domain),
+
+	config := &openapi.Config{
+		Endpoint:   tea.String(endpoint),
 		Credential: cred,
-	})
+	}
+
+	if strings.Contains(endpoint, suffix) {
+		config.Ca = tea.String(RegionIdAndCaMap[region])
+	}
+
+	kmsClient, err := kms.NewClient(config)
 
 	return kmsClient, err
 }
 
 func newOosClient(cred credentials.Credential, region string) (*oos.Client, error) {
-	domain := defaultOosDomain
-	if strings.Contains(domain, "%s") {
-		domain = fmt.Sprintf(domain, region)
+	endpoint := defaultOosEndpoint
+	if strings.Contains(endpoint, "%s") {
+		endpoint = fmt.Sprintf(endpoint, region)
 	}
-	oosClient, err := oos.NewClient(&openapiv2.Config{
-		Endpoint:   tea.String(domain),
+	oosClient, err := oos.NewClient(&openapi.Config{
+		Endpoint:   tea.String(endpoint),
 		Credential: cred,
 	})
 
