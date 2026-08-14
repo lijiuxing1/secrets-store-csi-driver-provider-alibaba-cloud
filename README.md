@@ -71,7 +71,7 @@ The following table lists the configurable parameters of the csi-secrets-store-p
 | `linux.enabled`                                                | Install alibabacloud provider on linux nodes                                                                                                                                                         | true                                                                                              |
 | `linux.image.repository`                                       | Linux image repository                                                                                                                                                                               | `registry.cn-hangzhou.aliyuncs.com/acs/secrets-store-csi-driver-provider-alibaba-cloud`         |
 | `linux.image.pullPolicy`                                       | Linux image pull policy                                                                                                                                                                              | `Always`                                                                                        |
-| `linux.image.tag`                                              | Alibaba Cloud Secrets Manager Provider Linux image tag                                                                                                                                               | `v0.6.0`                                                                                        |
+| `linux.image.tag`                                              | Alibaba Cloud Secrets Manager Provider Linux image tag                                                                                                                                               | `v0.7.0`                                                                                        |
 | `linux.nodeSelector`                                           | Node Selector for the daemonset on linux nodes                                                                                                                                                       | `{}`                                                                                            |
 | `linux.tolerations`                                            | Tolerations for the daemonset on linux nodes                                                                                                                                                         | `[]`                                                                                            |
 | `linux.resources`                                              | Resource limit for provider pods on linux nodes                                                                                                                                                      | `requests.cpu: 50m<br>``requests.memory: 100Mi<br>``limits.cpu: 100m<br>``limits.memory: 500Mi` |
@@ -109,7 +109,10 @@ The following table lists the configurable parameters of the csi-secrets-store-p
 
 ## Usage
 
-> **Note**: This section provides a step-by-step guide for Pod SA RRSA authentication (the **recommended** approach). For other authentication methods, see [Authentication Methods](#authentication-methods).
+> **Note**:
+>
+> 1. This section provides a step-by-step guide for Pod SA RRSA authentication (the **recommended** approach). For other authentication methods, see [Authentication Methods](#authentication-methods).
+> 2. The examples below use multiple CLI tools including [aliyun CLI](https://github.com/aliyun/aliyun-cli), [ack-ram-tool](https://github.com/AliyunContainerService/ack-ram-tool), `kubectl`, `helm`, etc. You can also perform these operations via the [Alibaba Cloud Console](https://home.console.aliyun.com/) or by calling Alibaba Cloud OpenAPI directly. Before using these tools, make sure they are installed and properly configured — for example, run `aliyun configure` to set up credentials and region for aliyun CLI, and configure kubeconfig for `kubectl` to connect to your cluster.
 
 ### Step 1: Enable RRSA
 
