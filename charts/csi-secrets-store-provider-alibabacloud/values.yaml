@@ -10,7 +10,7 @@ regionId: __ACK_REGION_ID__
 linux:
   image:
     repository: registry-__ACK_REGION_ID__.aliyuncs.com/acs/secrets-store-csi-driver-provider-alibaba-cloud
-    tag: v0.6.0
+    tag: v0.7.0
     pullPolicy: Always
   nodeSelector: {}
   tolerations: []

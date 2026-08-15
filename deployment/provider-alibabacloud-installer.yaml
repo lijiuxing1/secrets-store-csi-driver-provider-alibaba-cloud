@@ -50,7 +50,7 @@ spec:
       hostNetwork: true
       containers:
         - name: provider-alibabacloud-installer
-          image: registry.cn-hangzhou.aliyuncs.com/acs/secrets-store-csi-driver-provider-alibaba-cloud:v0.6.0
+          image: registry.cn-hangzhou.aliyuncs.com/acs/secrets-store-csi-driver-provider-alibaba-cloud:v0.7.0
           imagePullPolicy: IfNotPresent
           args:
             - --provider-volume=/provider

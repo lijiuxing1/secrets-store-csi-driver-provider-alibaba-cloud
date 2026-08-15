@@ -72,7 +72,7 @@ helm install csi-secrets-store-provider-alibabacloud/csi-secrets-store-provider-
 | `linux.enabled`                                                | 在 Linux 节点上安装 Alibaba Cloud Provider                                                                                                                                            | true                                                                                            |
 | `linux.image.repository`                                       | Linux 镜像仓库                                                                                                                                                                        | `registry.cn-hangzhou.aliyuncs.com/acs/secrets-store-csi-driver-provider-alibaba-cloud`         |
 | `linux.image.pullPolicy`                                       | Linux 镜像拉取策略                                                                                                                                                                    | `Always`                                                                                        |
-| `linux.image.tag`                                              | 阿里云密钥管理服务 Provider Linux 镜像标签                                                                                                                                            | `v0.6.0`                                                                                        |
+| `linux.image.tag`                                              | 阿里云密钥管理服务 Provider Linux 镜像标签                                                                                                                                            | `v0.7.0`                                                                                        |
 | `linux.nodeSelector`                                           | Linux 节点 DaemonSet 的节点选择器                                                                                                                                                     | `{}`                                                                                            |
 | `linux.tolerations`                                            | Linux 节点 DaemonSet 的容忍度配置                                                                                                                                                     | `[]`                                                                                            |
 | `linux.resources`                                              | Linux 节点 Provider Pod 的资源限制                                                                                                                                                    | `requests.cpu: 50m<br>``requests.memory: 100Mi<br>``limits.cpu: 100m<br>``limits.memory: 500Mi` |
@@ -110,7 +110,10 @@ helm install csi-secrets-store-provider-alibabacloud/csi-secrets-store-provider-
 
 ## 使用方式
 
-> **注意**：本节提供 Pod SA RRSA 认证（**推荐**方式）的分步指南。如需了解其他认证方式，请参见[认证方式说明](#认证方式说明)。
+> **注意**：
+>
+> 1. 本节提供 Pod SA RRSA 认证（**推荐**方式）的分步指南。如需了解其他认证方式，请参见[认证方式说明](#认证方式说明)。
+> 2. 以下示例使用了多种命令行工具完成操作，包括 [aliyun CLI](https://github.com/aliyun/aliyun-cli)、[ack-ram-tool](https://github.com/AliyunContainerService/ack-ram-tool)、`kubectl`、`helm` 等。您也可以通过[阿里云控制台](https://home.console.aliyun.com/)图形化操作，或调用阿里云 OpenAPI 完成。使用前请确保各工具已安装并完成配置，例如 aliyun CLI 需执行 `aliyun configure` 配置凭证和地域，`kubectl` 需配置 kubeconfig 以连接集群
 
 ### 步骤 1：启用 RRSA
 
@@ -526,6 +529,7 @@ spec:
 - ❌ 需要配置 Provider DaemonSet
 
 完整示例：
+
 - [provider-rrsa-secretproviderclass.yaml](https://github.com/aliyun/secrets-store-csi-driver-provider-alibaba-cloud/blob/master/examples/provider-rrsa-secretproviderclass.yaml) — SecretProviderClass 和 Pod 配置
 
 ### RAM Role ARN
@@ -689,6 +693,7 @@ spec:
 > **重要**：使用 Node Publish Secret 认证时，Pod 的 CSI 卷**必须**显式配置 `nodePublishSecretRef` 以引用包含 AK/SK 的 K8s Secret。这是 CSI Driver 将凭证传递给 Provider 的必要条件。
 >
 > **要求：**
+>
 > - Secret 必须存在于与 Pod **相同的命名空间**
 > - Secret 必须包含 `access_key` 和 `access_secret` 字段
 
@@ -1053,7 +1058,6 @@ Provider 通过 CSI Driver 的 [RequiresRepublish](https://secrets-store-csi-dri
     --set enableSecretRotation=true \
     --set rotationPollInterval=1h
   ```
-
 - `requiresRepublish` 是 **CSIDriver** 对象的字段（而非 SecretProviderClass）。当设置 `enableSecretRotation=true` 时，Helm chart 会自动设置该字段，无需手动配置。
 
 #### 工作原理（v1.6.0+）

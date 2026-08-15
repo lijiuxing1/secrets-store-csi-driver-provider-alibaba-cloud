@@ -1,10 +1,10 @@
-FROM golang:1.26.0 as builder
+FROM golang:1.26.5 as builder
 ENV GO111MODULE off
 WORKDIR /go/src/github.com/AliyunContainerService/secrets-store-csi-driver-provider-alibaba-cloud
 COPY . .
 RUN make build
 
-FROM alpine:3.11.6
+FROM alpine:3.20
 WORKDIR /bin
 
 RUN apk update && apk upgrade

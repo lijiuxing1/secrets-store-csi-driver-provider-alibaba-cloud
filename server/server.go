@@ -376,9 +376,11 @@ func (s *CSIDriverProviderServer) Mount(ctx context.Context, req *v1alpha1.Mount
 
 func newKmsClient(cred credentials.Credential, endpoint, region string) (*kms.Client, error) {
 	if endpoint == "" {
-		endpoint = defaultKmsEndpoint
-		if strings.Contains(endpoint, "%s") {
-			endpoint = fmt.Sprintf(endpoint, region)
+		endpoint = fmt.Sprintf(defaultKmsEndpoint, region)
+	} else {
+		// Validate user-supplied endpoint to prevent SSRF
+		if err := validateKmsEndpoint(endpoint); err != nil {
+			return nil, err
 		}
 	}
 
