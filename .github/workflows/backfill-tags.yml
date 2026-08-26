@@ -1,0 +1,90 @@
+# Backfill Historical Tags
+#
+# Purpose:
+#   One-off workflow to backfill git tags for all historical releases
+#   (v0.1.0 ~ v0.7.0). Tags have a "v" prefix. The version -> commit SHA mapping
+#   is hardcoded below. This workflow is idempotent — existing tags are skipped,
+#   so it is safe to re-run.
+#
+#   Triggers:
+#     - workflow_dispatch: manual trigger
+#     - push to main that changes this file: runs once automatically when this
+#       file is first merged
+#
+#   After backfilling, this workflow can be kept (idempotent) or deleted.
+
+name: Backfill Historical Tags
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/backfill-tags.yml
+
+permissions:
+  contents: write
+
+jobs:
+  backfill-tags:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create missing historical tags
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # version -> full commit SHA mapping (tags have a "v" prefix)
+          declare -A TAGS=(
+            ["v0.1.0"]="5ac258d4dfbc39fdc2822e1947ddde14860d88e8"
+            ["v0.2.0"]="af87c761782a408804baa3af36630767e64d9a80"
+            ["v0.3.0"]="b216f26217b50bcd3d5cd113b5c92536c9a9aa82"
+            ["v0.4.0"]="7b962ef1f9bd2d5b996152fa340873142ed40227"
+            ["v0.5.0"]="1ef1e4f1d4766c923bd9cf3df9392c85c6df9692"
+            ["v0.6.0"]="da13cbe4cd10793fe3697f3e203fa84c1bf0e59e"
+            ["v0.7.0"]="cc4603893fb643dce511b89d9cb7cbaad35b26f3"
+          )
+
+          created=0
+          skipped=0
+          created_tags=()
+
+          for tag in "${!TAGS[@]}"; do
+            commit="${TAGS[$tag]}"
+
+            # idempotency: skip existing tags
+            if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+              echo "Tag ${tag} already exists, skipping."
+              skipped=$((skipped + 1))
+              continue
+            fi
+
+            # verify the commit exists
+            if ! git cat-file -e "${commit}^{commit}" 2>/dev/null; then
+              echo "ERROR: commit ${commit} for tag ${tag} not found" >&2
+              exit 1
+            fi
+
+            git tag -a "${tag}" "${commit}" -m "Release ${tag}"
+            created_tags+=("${tag}")
+            echo "Created tag ${tag} -> ${commit}."
+            created=$((created + 1))
+          done
+
+          echo "Summary: created=${created}, skipped=${skipped}."
+
+          # Push only the tags newly created in this run.
+          if [ "${#created_tags[@]}" -gt 0 ]; then
+            git push origin "${created_tags[@]}"
+            echo "Pushed tags: ${created_tags[*]}"
+          else
+            echo "No new tags to push."
+          fi

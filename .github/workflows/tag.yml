@@ -1,0 +1,64 @@
+# Auto Tag Release
+#
+# Purpose:
+#   Automatically create a git tag whenever the `version` field in
+#   charts/csi-secrets-store-provider-alibabacloud/Chart.yaml changes on main.
+#   The tag name is the version value prefixed with "v" (e.g. v0.7.0).
+#
+#   This workflow is idempotent: if the tag already exists it is skipped.
+
+name: Auto Tag Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - charts/csi-secrets-store-provider-alibabacloud/Chart.yaml
+
+permissions:
+  contents: write
+
+jobs:
+  auto-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create tag from Chart.yaml version
+        run: |
+          set -euo pipefail
+
+          chart_file="charts/csi-secrets-store-provider-alibabacloud/Chart.yaml"
+
+          # Parse the top-level `version` field from Chart.yaml, stripping quotes and surrounding whitespace.
+          version="$(grep -E '^version:' "${chart_file}" \
+            | head -n1 \
+            | sed -E 's/^version:[[:space:]]*//' \
+            | sed -E 's/^["'\'']//; s/["'\'']$//' \
+            | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
+
+          if [ -z "${version}" ]; then
+            echo "ERROR: failed to parse version from ${chart_file}" >&2
+            exit 1
+          fi
+
+          # tag is the version prefixed with "v"
+          tag="v${version}"
+          echo "Resolved tag: ${tag}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # idempotency check: skip if the tag already exists
+          if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+            echo "Tag ${tag} already exists, skipping."
+            exit 0
+          fi
+
+          git tag -a "${tag}" -m "Release ${tag}"
+          git push origin "${tag}"
+          echo "Created and pushed tag ${tag}."
